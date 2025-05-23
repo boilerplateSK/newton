@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newton's Quest: Elliptical Orbits</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Visualization & Content Choices:
+        - Kepler's 1st Law: Goal: Understand elliptical orbits. Viz: Canvas with slider for eccentricity. Interaction: Adjust slider to see ellipse shape change. Justification: Visualizes abstract concept. Lib: Custom Canvas + JS.
+        - Kepler's 2nd Law: Goal: Understand varying speed/equal areas. Viz: Canvas animation of orbiting planet. Interaction: Play/pause. Justification: Dynamic illustration of the law. Lib: Custom Canvas + JS.
+        - Tables (Kepler's Laws, Calculus Concepts, Derivation Pathways): Goal: Summarize key info. Viz: HTML tables. Interaction: None. Justification: Clear, structured presentation. Lib: HTML/Tailwind.
+        - Mathematical Gaps (Tangent Problem): Goal: Show limits of old math. Viz: Static canvas diagram. Interaction: None (or hover highlights). Justification: Simple visual for a conceptual point. Lib: Custom Canvas.
+        - Differentiation: Goal: Understand instantaneous rate of change. Viz: Canvas with curve, draggable point showing tangent & slope. Interaction: Drag point. Justification: Interactive learning of derivative. Lib: Chart.js (or Custom Canvas) + JS.
+        - Integration: Goal: Understand accumulation. Viz: Canvas with curve, selectable range showing area. Interaction: Select range. Justification: Interactive learning of integral. Lib: Chart.js (or Custom Canvas) + JS.
+        - Newton's Inverse-Square Law: Goal: Understand force-distance relation. Viz: Canvas with two masses, draggable. Interaction: Drag mass to see force change. Justification: Interactive exploration of the law. Lib: Custom Canvas + JS.
+        - Grand Synthesis Diagram: Goal: Visually link concepts. Viz: Simplified interactive step-by-step flow on Canvas. Interaction: Click through steps. Justification: Clarify the overall argument. Lib: Custom Canvas + JS.
+        - All textual content adapted from the report for conciseness and presented within appropriate sections.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .nav-link { transition: all 0.3s ease; }
+        .nav-link.active, .nav-link:hover {
+            background-color: #EA580C; /* orange-600 */
+            color: white;
+        }
+        .slider-thumb::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: #C2410C; cursor: pointer; border-radius: 50%; }
+        .slider-thumb::-moz-range-thumb { width: 20px; height: 20px; background: #C2410C; cursor: pointer; border-radius: 50%; border: none; }
+    </style>
+</head>
+<body class="bg-amber-50 text-stone-800">
+
+    <header class="bg-orange-700 text-white p-6 shadow-md">
+        <h1 class="text-3xl font-bold text-center">Newton's Quest: Understanding Elliptical Orbits</h1>
+    </header>
+
+    <nav class="bg-stone-100 p-4 shadow-sm sticky top-0 z-50">
+        <ul class="flex flex-wrap justify-center space-x-2 sm:space-x-4">
+            <li><button data-target="kepler" class="nav-link active px-3 py-2 rounded-md text-sm font-medium text-stone-700">Kepler's Observations</button></li>
+            <li><button data-target="math-gaps" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Mathematical Gaps</button></li>
+            <li><button data-target="calculus" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Calculus Emerges</button></li>
+            <li><button data-target="newton-laws" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Newton's Laws</button></li>
+            <li><button data-target="synthesis" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">The Grand Synthesis</button></li>
+            <li><button data-target="conclusion" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Conclusion</button></li>
+        </ul>
+    </nav>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <section id="kepler" class="content-section active space-y-6">
+            <h2 class="text-2xl font-semibold text-orange-700 border-b-2 border-orange-200 pb-2">I. The Enigma of the Heavens: Kepler's Observations</h2>
+            <p class="text-stone-700 leading-relaxed">This section explores Johannes Kepler's groundbreaking empirical laws of planetary motion, derived from meticulous astronomical observations. These laws described *how* planets move, setting the stage for Newton to later explain *why* they move in such paths. Understanding Kepler's findings is the first step in appreciating the challenge Newton faced and the revolution his work, powered by calculus, would bring.</p>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Kepler's First Law: Law of Ellipses</h3>
+                <p class="text-stone-700 mb-4">Planets move in elliptical orbits with the Sun at one focus. This broke from the ancient idea of perfect circular orbits. The 'eccentricity' (e) of an ellipse measures how much it deviates from a perfect circle (e=0 for a circle, 0 < e < 1 for an ellipse).</p>
+                <div class="chart-container bg-stone-50 p-2 rounded">
+                    <canvas id="ellipseCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <label for="eccentricitySlider" class="block text-sm font-medium text-stone-700">Adjust Eccentricity (e): <span id="eccentricityValue">0.5</span></label>
+                    <input type="range" id="eccentricitySlider" min="0" max="0.95" step="0.01" value="0.5" class="w-full max-w-sm h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                </div>
+                <p class="text-xs text-stone-500 mt-2 text-center">The Sun (represented by the orange dot) is at one focus of the ellipse.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Kepler's Second Law: Law of Equal Areas</h3>
+                <p class="text-stone-700 mb-4">A line segment joining a planet and the Sun sweeps out equal areas during equal intervals of time. This implies planets move faster when closer to the Sun (perihelion) and slower when farther away (aphelion).</p>
+                <div class="chart-container bg-stone-50 p-2 rounded">
+                    <canvas id="equalAreasCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="toggleAnimation" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">Start Animation</button>
+                </div>
+                 <p class="text-xs text-stone-500 mt-2 text-center">Observe how the planet speeds up near the Sun (orange dot) and slows down when farther away, while the swept areas (shaded regions) for equal time intervals aim to be equal.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Kepler's Third Law: Law of Harmonies</h3>
+                <p class="text-stone-700">The square of a planet's orbital period (P) is proportional to the cube of the semi-major axis (a) of its orbit (P² ∝ a³). This mathematical relationship holds for all planets orbiting the Sun, hinting at a universal underlying force.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Table 1: Kepler's Laws of Planetary Motion</h3>
+                <table class="min-w-full divide-y divide-stone-200">
+                    <thead class="bg-stone-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Kepler's Law</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Statement</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Key Implication</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-stone-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">First Law</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Planets move in elliptical orbits with the Sun at one focus.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Orbits are not perfect circles; shape defined by eccentricity.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Second Law</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">A line joining a planet and the Sun sweeps out equal areas during equal intervals of time.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Planets move faster near the Sun, slower farther away.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Third Law</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">The square of orbital period (P) is proportional to the cube of the semi-major axis (a) (P² ∝ a³).</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Consistent mathematical relation for all planets, hinting at a universal force.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="math-gaps" class="content-section space-y-6">
+            <h2 class="text-2xl font-semibold text-orange-700 border-b-2 border-orange-200 pb-2">II. The Unyielding Limits of Ancient Tools</h2>
+            <p class="text-stone-700 leading-relaxed">This section delves into why the mathematical tools available before Newton—primarily classical geometry and algebra—were insufficient to explain the *causes* of planetary motion. Kepler described *what* happened, but to understand *why*, a new mathematics capable of handling continuous change and instantaneous rates was desperately needed. This highlights the intellectual void that spurred the invention of calculus.</p>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">The Challenge of Continuous Change</h3>
+                <p class="text-stone-700 mb-4">Classical mathematics excelled at static forms but struggled with continuous motion. Concepts like 'instantaneous velocity'—speed at a single moment—were paradoxical. How could one define the properties of motion at an indivisible instant if motion itself implies change over time? This was a fundamental conceptual barrier.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">The Problem of Instantaneous Velocity and Acceleration</h3>
+                <p class="text-stone-700 mb-4">To understand forces, one needs to know how velocity changes (acceleration). Traditional methods couldn't precisely define the 'slope' (rate of change) of a curve at a single point. Approximations were possible but lacked the rigor and generality needed for a universal theory of motion. Without this, linking force to acceleration (F=ma) for continuously varying planetary paths was impossible.</p>
+                <div class="chart-container bg-stone-50 p-2 rounded">
+                    <canvas id="tangentProblemCanvas"></canvas>
+                </div>
+                <p class="text-xs text-stone-500 mt-2 text-center">Visualizing the difficulty: For a straight line (left), the slope is constant. For a curve (right), finding the slope at a single point (the tangent) was a major challenge for pre-calculus mathematics.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">The Accumulation of Change: Calculating Areas</h3>
+                <p class="text-stone-700">Another challenge was summing up the effects of continuously varying quantities. For instance, how to calculate the exact area swept by a planet's radius vector (Kepler's Second Law) if its speed and direction are always changing? Methods like Archimedes' method of exhaustion were precursors but lacked a general, systematic approach for all types of curves and rates.</p>
+            </div>
+        </section>
+
+        <section id="calculus" class="content-section space-y-6">
+            <h2 class="text-2xl font-semibold text-orange-700 border-b-2 border-orange-200 pb-2">III. Forging the Instruments of Discovery: The Genesis of Calculus</h2>
+            <p class="text-stone-700 leading-relaxed">Faced with the limitations of existing mathematics, Isaac Newton (and independently, Gottfried Wilhelm Leibniz) developed calculus. This revolutionary framework provided the tools to precisely describe and analyze continuous change. This section introduces the core concepts of calculus—differentiation (fluxions) and integration (quadratures)—and the profound connection between them, the Fundamental Theorem of Calculus. These were the keys Newton needed to unlock the secrets of planetary motion.</p>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">"Fluxions": Quantifying Instantaneous Rates (Differentiation)</h3>
+                <p class="text-stone-700 mb-4">Newton conceived of "fluxions" to represent the instantaneous rate of change of a "fluent" (a changing quantity). This is what we now call the derivative. It mathematically defines the slope of a tangent to a curve at any point, giving the precise rate of change at that instant (e.g., instantaneous velocity or acceleration).</p>
+                <div class="chart-container bg-stone-50 p-2 rounded">
+                     <canvas id="derivativeCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <label for="derivativePointSlider" class="block text-sm font-medium text-stone-700">Move Point Along Curve (X-value): <span id="derivativeXValue">1</span></label>
+                    <input type="range" id="derivativePointSlider" min="-2.8" max="2.8" step="0.05" value="1" class="w-full max-w-sm h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                    <p class="text-sm text-stone-600 mt-2">Slope (Derivative) at X = <span id="derivativeXDisplay">1</span>: <span id="slopeValue">0</span></p>
+                </div>
+                <p class="text-xs text-stone-500 mt-2 text-center">The red line is the tangent to the curve at the selected point. Its slope is the derivative.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">"Quadratures": Summing Infinitesimal Parts (Integration)</h3>
+                <p class="text-stone-700 mb-4">"Quadratures" was the method for calculating areas under curves (or volumes) by summing an infinite number of infinitesimally small parts. This is what we now call integration. It solves the problem of accumulated change, like finding the total distance traveled from a varying velocity, or the area swept by Kepler's planets.</p>
+                 <div class="chart-container bg-stone-50 p-2 rounded">
+                    <canvas id="integralCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <label for="integralRangeSliderA" class="block text-sm font-medium text-stone-700">Integration Range Start (a): <span id="integralRangeAValue">-1</span></label>
+                    <input type="range" id="integralRangeSliderA" min="-2.8" max="2.8" step="0.05" value="-1" class="w-full max-w-xs h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                    <label for="integralRangeSliderB" class="block text-sm font-medium text-stone-700 mt-2">Integration Range End (b): <span id="integralRangeBValue">1.5</span></label>
+                    <input type="range" id="integralRangeSliderB" min="-2.8" max="2.8" step="0.05" value="1.5" class="w-full max-w-xs h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                    <p class="text-sm text-stone-600 mt-2">Area (Integral) from <span id="integralAdisplay">-1</span> to <span id="integralBdisplay">1.5</span>: <span id="areaValue">0</span></p>
+                </div>
+                <p class="text-xs text-stone-500 mt-2 text-center">The shaded region represents the area under the curve between the selected points 'a' and 'b'.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">The Profound Connection: Fundamental Theorem of Calculus</h3>
+                <p class="text-stone-700">The most crucial insight was that differentiation and integration are inverse operations. This is the Fundamental Theorem of Calculus. It unified these two concepts into a powerful, coherent system, transforming mathematics and enabling the solution of complex physical problems.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Table 2: Core Concepts of Calculus</h3>
+                <table class="min-w-full divide-y divide-stone-200">
+                    <thead class="bg-stone-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Concept</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Definition</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Physical Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-stone-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Fluxions / Derivatives</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Instantaneous rate of change of a function; slope of the tangent line.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Instantaneous velocity, acceleration, any rate of change.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Quadratures / Integrals</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Summing infinitesimals to find total accumulation; area under a curve.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Total displacement, total work, area swept.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Fundamental Theorem</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Differentiation and integration are inverse operations.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Unifies calculus into a powerful problem-solving tool for dynamic systems.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="newton-laws" class="content-section space-y-6">
+            <h2 class="text-2xl font-semibold text-orange-700 border-b-2 border-orange-200 pb-2">IV. The Universal Architect: Newton's Laws of Motion and Gravitation</h2>
+            <p class="text-stone-700 leading-relaxed">Armed with calculus, Isaac Newton formulated his three Laws of Motion and the Law of Universal Gravitation. These laws provided a comprehensive framework for understanding how forces affect motion across the universe. This section outlines these fundamental principles, which, when combined with calculus, would finally explain Kepler's observations and the elliptical paths of planets.</p>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">The Principles of Motion: Inertia, Force, Action-Reaction</h3>
+                <ul class="list-disc list-inside text-stone-700 space-y-2">
+                    <li><strong>First Law (Inertia):</strong> An object stays at rest or in uniform motion unless a net force acts on it. Change requires force.</li>
+                    <li><strong>Second Law (F=ma):</strong> Acceleration is proportional to net force and inversely proportional to mass. This quantitatively links force to the instantaneous change in motion (acceleration, a derivative).</li>
+                    <li><strong>Third Law (Action-Reaction):</strong> For every action, there's an equal and opposite reaction. Forces occur in pairs.</li>
+                </ul>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">The Inverse-Square Law: A Force Uniting Heaven and Earth</h3>
+                <p class="text-stone-700 mb-4">Newton's Law of Universal Gravitation states that any two objects attract each other with a force (F) proportional to the product of their masses (m1, m2) and inversely proportional to the square of the distance (r) between their centers: F = G(m1*m2)/r². This single law explained falling apples and orbiting planets.</p>
+                <div class="chart-container bg-stone-50 p-2 rounded">
+                    <canvas id="gravityCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <label for="distanceSlider" class="block text-sm font-medium text-stone-700">Adjust Distance Between Masses: <span id="distanceValue">150</span></label>
+                    <input type="range" id="distanceSlider" min="50" max="250" step="1" value="150" class="w-full max-w-sm h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                    <p class="text-sm text-stone-600 mt-2">Gravitational Force (Arbitrary Units): <span id="forceValue">0</span></p>
+                </div>
+                 <p class="text-xs text-stone-500 mt-2 text-center">The blue circles represent two masses. The orange arrows represent the force of gravity. Notice how the force changes as you alter the distance.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Centripetal Force: The Invisible Hand Guiding Orbits</h3>
+                <p class="text-stone-700">For an object to move in a curve (like an orbit), a 'centripetal' (center-seeking) force must continuously act on it, pulling it away from a straight path. For planets, this centripetal force is provided by the Sun's gravity.</p>
+            </div>
+        </section>
+
+        <section id="synthesis" class="content-section space-y-6">
+            <h2 class="text-2xl font-semibold text-orange-700 border-b-2 border-orange-200 pb-2">V. The Grand Synthesis: Deriving Elliptical Orbits with Calculus</h2>
+            <p class="text-stone-700 leading-relaxed">This is where it all comes together. Using his laws of motion, the law of universal gravitation, and the powerful tools of calculus, Newton was able to mathematically derive Kepler's empirical laws. This section explains how the inverse-square nature of gravity, when analyzed with calculus, naturally leads to elliptical orbits and explains the other observed behaviors of planets. This was the ultimate triumph, transforming astronomy from descriptive to predictive science.</p>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">From Inverse-Square Force to Conic Sections (Elliptical Paths)</h3>
+                <p class="text-stone-700 mb-4">By setting Newton's Second Law (F=ma) equal to his Law of Gravitation (F=GmM/r²) and solving the resulting differential equations using calculus, it's proven that orbits under an inverse-square force must be conic sections (circles, ellipses, parabolas, or hyperbolas). For planets (bound objects with negative total energy), these orbits are ellipses. The eccentricity 'e' determines the exact shape.</p>
+                <div class="bg-stone-100 p-4 rounded mt-2">
+                    <p class="text-sm text-stone-700 font-mono">Orbital Equation: r = h² / (G(m1+m2)) * (1 / (1 + e cos θ))</p>
+                    <p class="text-xs text-stone-500 mt-1">Where 'r' is distance, 'h' is angular momentum per unit mass, 'G' is gravitational constant, 'm1', 'm2' are masses, 'e' is eccentricity, 'θ' is angle.</p>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                 <h3 class="text-xl font-semibold text-orange-600 mb-3">Interactive Synthesis: Force to Orbit (Conceptual)</h3>
+                <p class="text-stone-700 mb-4">This conceptual animation illustrates the steps from gravitational force to the resulting orbit. Click through the stages to see how Newton's laws and calculus connect to explain planetary motion.</p>
+                <div class="chart-container bg-stone-50 p-2 rounded">
+                    <canvas id="synthesisCanvas"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="synthesisNextStep" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">Start / Next Step</button>
+                    <p id="synthesisStepText" class="text-sm text-stone-600 mt-2">Step 0: Initial State</p>
+                </div>
+            </div>
+
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Conservation of Angular Momentum (Deriving Kepler's Second Law)</h3>
+                <p class="text-stone-700">Calculus shows that for a central force (like gravity, always pointing towards the Sun), angular momentum (a measure of rotational motion) is conserved. This conservation directly leads to Kepler's Second Law: the constant rate of sweeping out areas (dA/dt = L/2m, where L is angular momentum, m is mass).</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Predicting Periods (Deriving Kepler's Third Law)</h3>
+                <p class="text-stone-700">Combining Newton's laws with calculus also derives Kepler's Third Law (P² ∝ a³), but in a more general form: P² = 4π²a³ / G(m1+m2). This includes the masses of both bodies, making it universally applicable and more precise.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <h3 class="text-xl font-semibold text-orange-600 mb-3">Table 3: Derivation Pathways</h3>
+                <table class="min-w-full divide-y divide-stone-200">
+                    <thead class="bg-stone-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Kepler's Law</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Newton's Principles</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Calculus Application</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-stone-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">First Law</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Gravitation (Inverse-Square), F=ma, Centripetal Force.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Solving differential equations of motion.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Proof of conic section orbits (ellipses for planets).</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Second Law</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Gravitation (Central Force), Angular Momentum Conservation.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">d**L**/dt = 0 for central force; dA/dt = L/2m.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Proof of constant areal velocity.</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-stone-900">Third Law</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Gravitation, F=ma, Centripetal Force, v=2πa/P.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Algebraic derivation using calculus-defined quantities.</td>
+                            <td class="px-6 py-4 whitespace-normal text-sm text-stone-600">Derivation of P² = 4π²a³ / G(m1+m2).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="conclusion" class="content-section space-y-6">
+            <h2 class="text-2xl font-semibold text-orange-700 border-b-2 border-orange-200 pb-2">VI. A New Epoch of Understanding</h2>
+            <p class="text-stone-700 leading-relaxed">This final section reflects on the profound impact of Newton's work. The journey from Kepler's empirical laws to Newton's calculus-driven derivations marked a paradigm shift in science. The mystery of elliptical orbits was solved, revealing them as a natural consequence of universal physical laws. This established the power of mathematical physics, where theory and observation unite to explain the cosmos.</p>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="text-stone-700">Newton's synthesis, powered by his invention of calculus, didn't just answer *why* planets move in ellipses; it provided a universal framework for understanding motion and forces. It demonstrated that the same laws govern celestial bodies and objects on Earth. The elliptical paths, once a puzzle, became a testament to the elegance and universality of gravity, understood through the precise language of calculus. This legacy continues to underpin much of modern science and engineering, showcasing the enduring power of mathematical reasoning to unlock the secrets of the universe.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="text-center p-6 mt-10 border-t border-stone-200">
+        <p class="text-sm text-stone-500">Interactive Exploration of Newton's Discoveries.</p>
+    </footer>
+
+    <script>
+        const navLinks = document.querySelectorAll('.nav-link');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.forEach(navLink => navLink.classList.remove('active'));
+                link.classList.add('active');
+
+                const targetId = link.getAttribute('data-target');
+                contentSections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+
+        // Kepler's First Law: Ellipse Visualization
+        const ellipseCanvas = document.getElementById('ellipseCanvas');
+        const ellipseCtx = ellipseCanvas.getContext('2d');
+        const eccentricitySlider = document.getElementById('eccentricitySlider');
+        const eccentricityValueDisplay = document.getElementById('eccentricityValue');
+        let ellipseChart;
+
+        function drawEllipse(eccentricity) {
+            const canvas = ellipseCanvas;
+            const ctx = ellipseCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const a = Math.min(w, h) * 0.4; // Semi-major axis
+            const c = eccentricity * a; // Distance from center to focus
+            const b = Math.sqrt(a*a - c*c); // Semi-minor axis
+
+            ctx.beginPath();
+            ctx.ellipse(w/2, h/2, a, b, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#C2410C'; // orange-700
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw Sun at one focus
+            ctx.beginPath();
+            ctx.arc(w/2 - c, h/2, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#EA580C'; // orange-600
+            ctx.fill();
+        }
+
+        eccentricitySlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            eccentricityValueDisplay.textContent = val.toFixed(2);
+            drawEllipse(val);
+        });
+        drawEllipse(parseFloat(eccentricitySlider.value)); // Initial draw
+
+
+        // Kepler's Second Law: Equal Areas Animation
+        const equalAreasCanvas = document.getElementById('equalAreasCanvas');
+        const equalAreasCtx = equalAreasCanvas.getContext('2d');
+        const toggleAnimationBtn = document.getElementById('toggleAnimation');
+        let animationRunning = false;
+        let angle = 0;
+        let planetAnimationFrame;
+        const ea_a = 120; // semi-major axis for equal areas
+        const ea_e = 0.6; // eccentricity for equal areas
+        const ea_c = ea_a * ea_e;
+        const ea_b = Math.sqrt(ea_a*ea_a - ea_c*ea_c);
+        let areas = [];
+        let areaPointCounter = 0;
+
+        function drawEqualAreasFrame() {
+            const canvas = equalAreasCanvas;
+            const ctx = equalAreasCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+            
+            const centerX = w/2;
+            const centerY = h/2;
+
+            // Draw Sun at focus
+            ctx.beginPath();
+            ctx.arc(centerX - ea_c, centerY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#EA580C';
+            ctx.fill();
+
+            // Draw ellipse path
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, ea_a, ea_b, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#D6D3D1'; // stone-300
+            ctx.stroke();
+
+            // Calculate planet position (simplified for visualization)
+            // True anomaly calculation is complex, this is an approximation for speed variation
+            const r = ea_a * (1 - ea_e * ea_e) / (1 + ea_e * Math.cos(angle));
+            const planetX = centerX - ea_c + r * Math.cos(angle);
+            const planetY = centerY + r * Math.sin(angle);
+
+            // Draw planet
+            ctx.beginPath();
+            ctx.arc(planetX, planetY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#2563EB'; // blue-600
+            ctx.fill();
+            
+            // Draw swept areas (simplified)
+            areaPointCounter++;
+            if (areaPointCounter % 50 === 0) { // Add a new area segment periodically
+                if (areas.length >= 3 && areas.length % 2 !== 0) { // Start of a new area
+                     areas.push({x: centerX - ea_c, y: centerY}); // Sun
+                }
+                areas.push({x: planetX, y: planetY});
+                if (areas.length > 12) areas = areas.slice(-12); // Keep last few segments
+            }
+
+            if (areas.length >= 3) {
+                for (let i = 0; i < areas.length - 2; i += 3) {
+                     if (areas[i+2]) {
+                        ctx.beginPath();
+                        ctx.moveTo(areas[i].x, areas[i].y); // Sun
+                        ctx.lineTo(areas[i+1].x, areas[i+1].y); // Point 1
+                        ctx.lineTo(areas[i+2].x, areas[i+2].y); // Point 2
+                        ctx.closePath();
+                        ctx.fillStyle = 'rgba(234, 88, 12, 0.2)'; // orange-600 with alpha
+                        ctx.fill();
+                     }
+                }
+            }
+
+
+            // Vary speed: d(angle)/dt = L / r^2. L is constant. So speed is higher when r is smaller.
+            // This is a simplification for visualization.
+            const speedFactor = 1 / (r*r); // Simplified inverse square relation to distance
+            angle += 0.0005 * speedFactor * (ea_a*ea_a); // Adjust base speed
+
+            if (angle > 2 * Math.PI) {
+                angle = 0;
+                areas = []; // Reset areas after one orbit
+            }
+
+            if (animationRunning) {
+                planetAnimationFrame = requestAnimationFrame(drawEqualAreasFrame);
+            }
+        }
+        
+        toggleAnimationBtn.addEventListener('click', () => {
+            animationRunning = !animationRunning;
+            toggleAnimationBtn.textContent = animationRunning ? 'Pause Animation' : 'Resume Animation';
+            if (animationRunning) {
+                drawEqualAreasFrame();
+            } else {
+                cancelAnimationFrame(planetAnimationFrame);
+            }
+        });
+        drawEqualAreasFrame(); // Initial static draw
+
+
+        // Tangent Problem Canvas
+        const tangentProblemCanvas = document.getElementById('tangentProblemCanvas');
+        const tpCtx = tangentProblemCanvas.getContext('2d');
+        function drawTangentProblem() {
+            const canvas = tangentProblemCanvas;
+            const ctx = tpCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0,0,w,h);
+
+            // Left: Straight line
+            ctx.beginPath();
+            ctx.moveTo(w*0.1, h*0.7);
+            ctx.lineTo(w*0.4, h*0.3);
+            ctx.strokeStyle = '#C2410C';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillText("Constant Slope", w*0.15, h*0.8);
+
+            // Right: Curve
+            ctx.beginPath();
+            ctx.moveTo(w*0.6, h*0.7);
+            ctx.quadraticCurveTo(w*0.75, h*0.2, w*0.9, h*0.5);
+            ctx.strokeStyle = '#C2410C';
+            ctx.stroke();
+            
+            // Point on curve
+            const px = w*0.75; 
+            const py = h*0.7 - 0.55 * (px - w*0.6) + 0.005 * (px-w*0.6)*(px-w*0.6) ; // approx y on quadratic
+            const curvePointX = w*0.72; // An x on the curve
+            const curvePointY = h*0.7 + ( ( (w*0.75-curvePointX)*(w*0.75-curvePointX) ) / ((w*0.75-w*0.6)*(w*0.75-w*0.6)) ) * (h*0.2-h*0.7) +
+                                ( ( (curvePointX-w*0.6)*(curvePointX-w*0.6) ) / ((w*0.75-w*0.6)*(w*0.75-w*0.6)) ) * (h*0.5-h*0.7) ; // simplified point on curve
+
+            ctx.beginPath();
+            ctx.arc(w*0.75, h*0.37, 4, 0, 2*Math.PI); // Approximate point on curve
+            ctx.fillStyle = '#1D4ED8'; // blue-700
+            ctx.fill();
+            ctx.fillText("Slope changes", w*0.65, h*0.8);
+            ctx.fillText("Tangent?", w*0.78, h*0.35);
+        }
+        drawTangentProblem();
+
+        // Derivative Canvas
+        const derivativeCanvas = document.getElementById('derivativeCanvas');
+        const derivativeCtx = derivativeCanvas.getContext('2d');
+        const derivativePointSlider = document.getElementById('derivativePointSlider');
+        const derivativeXValueDisplay = document.getElementById('derivativeXValue');
+        const derivativeXDisplay = document.getElementById('derivativeXDisplay');
+        const slopeValueDisplay = document.getElementById('slopeValue');
+
+        // Function: y = -x^3/10 + x (example function)
+        function func(x) { return -Math.pow(x, 3)/10 + x; }
+        // Derivative: y' = -3x^2/10 + 1
+        function derivFunc(x) { return -3 * Math.pow(x, 2)/10 + 1; }
+
+        function drawDerivativePlot() {
+            const canvas = derivativeCanvas;
+            const ctx = derivativeCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0,0,w,h);
+
+            const scaleX = w / 6; // Map -3 to 3 on x-axis
+            const scaleY = h / 6; // Map -3 to 3 on y-axis
+            const originX = w / 2;
+            const originY = h / 2;
+
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(0, originY); ctx.lineTo(w, originY); // X-axis
+            ctx.moveTo(originX, 0); ctx.lineTo(originX, h); // Y-axis
+            ctx.strokeStyle = '#D6D3D1';
+            ctx.stroke();
+
+            // Plot function
+            ctx.beginPath();
+            ctx.strokeStyle = '#C2410C'; // orange-700
+            ctx.lineWidth = 2;
+            for (let xPlot = -3; xPlot <= 3; xPlot += 0.05) {
+                const yPlot = func(xPlot);
+                if (xPlot === -3) ctx.moveTo(originX + xPlot * scaleX, originY - yPlot * scaleY);
+                else ctx.lineTo(originX + xPlot * scaleX, originY - yPlot * scaleY);
+            }
+            ctx.stroke();
+
+            // Current point from slider
+            const currentX = parseFloat(derivativePointSlider.value);
+            const currentY = func(currentX);
+            const slope = derivFunc(currentX);
+
+            derivativeXValueDisplay.textContent = currentX.toFixed(2);
+            derivativeXDisplay.textContent = currentX.toFixed(2);
+            slopeValueDisplay.textContent = slope.toFixed(2);
+
+            const pointCanvasX = originX + currentX * scaleX;
+            const pointCanvasY = originY - currentY * scaleY;
+
+            // Draw point on curve
+            ctx.beginPath();
+            ctx.arc(pointCanvasX, pointCanvasY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1D4ED8'; // blue-700
+            ctx.fill();
+
+            // Draw tangent line
+            ctx.beginPath();
+            const tangentLength = scaleX * 1.5; // Length of tangent line visual
+            ctx.moveTo(pointCanvasX - tangentLength, pointCanvasY - slope * tangentLength);
+            ctx.lineTo(pointCanvasX + tangentLength, pointCanvasY + slope * tangentLength);
+            ctx.strokeStyle = '#EA580C'; // orange-600
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+        derivativePointSlider.addEventListener('input', drawDerivativePlot);
+        drawDerivativePlot();
+
+
+        // Integral Canvas
+        const integralCanvas = document.getElementById('integralCanvas');
+        const integralCtx = integralCanvas.getContext('2d');
+        const integralRangeSliderA = document.getElementById('integralRangeSliderA');
+        const integralRangeSliderB = document.getElementById('integralRangeSliderB');
+        const integralRangeAValueDisplay = document.getElementById('integralRangeAValue');
+        const integralRangeBValueDisplay = document.getElementById('integralRangeBValue');
+        const integralAdisplay = document.getElementById('integralAdisplay');
+        const integralBdisplay = document.getElementById('integralBdisplay');
+        const areaValueDisplay = document.getElementById('areaValue');
+        
+        // Function for integral: y = x^2/3 + 1 (example function)
+        function integralFunc(x) { return Math.pow(x,2)/3 + 1; }
+        // Indefinite Integral: F(x) = x^3/9 + x
+        function antiDerivFunc(x) { return Math.pow(x,3)/9 + x; }
+
+        function drawIntegralPlot() {
+            const canvas = integralCanvas;
+            const ctx = integralCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0,0,w,h);
+
+            const scaleX = w / 6; 
+            const scaleY = h / 6; 
+            const originX = w / 2;
+            const originY = h * 0.75; // Shift origin down to see positive curve better
+
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(0, originY); ctx.lineTo(w, originY);
+            ctx.moveTo(originX, 0); ctx.lineTo(originX, h);
+            ctx.strokeStyle = '#D6D3D1';
+            ctx.stroke();
+
+            // Plot function
+            ctx.beginPath();
+            ctx.strokeStyle = '#C2410C';
+            ctx.lineWidth = 2;
+            for (let xPlot = -3; xPlot <= 3; xPlot += 0.05) {
+                const yPlot = integralFunc(xPlot);
+                if (xPlot === -3) ctx.moveTo(originX + xPlot * scaleX, originY - yPlot * scaleY);
+                else ctx.lineTo(originX + xPlot * scaleX, originY - yPlot * scaleY);
+            }
+            ctx.stroke();
+
+            let a = parseFloat(integralRangeSliderA.value);
+            let b = parseFloat(integralRangeSliderB.value);
+            if (a > b) [a, b] = [b, a]; // Ensure a <= b
+
+            integralRangeAValueDisplay.textContent = parseFloat(integralRangeSliderA.value).toFixed(2);
+            integralRangeBValueDisplay.textContent = parseFloat(integralRangeSliderB.value).toFixed(2);
+            integralAdisplay.textContent = a.toFixed(2);
+            integralBdisplay.textContent = b.toFixed(2);
+            
+            const area = antiDerivFunc(b) - antiDerivFunc(a);
+            areaValueDisplay.textContent = area.toFixed(2);
+
+            // Shade area under curve
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(234, 88, 12, 0.3)'; // orange-600 with alpha
+            ctx.moveTo(originX + a * scaleX, originY);
+            for (let xPlot = a; xPlot <= b; xPlot += 0.01) { // Iterate fine steps for smooth shading
+                 ctx.lineTo(originX + xPlot * scaleX, originY - integralFunc(xPlot) * scaleY);
+            }
+            ctx.lineTo(originX + b * scaleX, originY);
+            ctx.closePath();
+            ctx.fill();
+        }
+        integralRangeSliderA.addEventListener('input', drawIntegralPlot);
+        integralRangeSliderB.addEventListener('input', drawIntegralPlot);
+        drawIntegralPlot();
+
+
+        // Gravity Canvas (Inverse Square Law)
+        const gravityCanvas = document.getElementById('gravityCanvas');
+        const gravCtx = gravityCanvas.getContext('2d');
+        const distanceSlider = document.getElementById('distanceSlider');
+        const distanceValueDisplay = document.getElementById('distanceValue');
+        const forceValueDisplay = document.getElementById('forceValue');
+        const mass1 = { x: 0, y: 0, radius: 15, m: 100 }; // x,y relative to center
+        const mass2 = { x: 150, y: 0, radius: 10, m: 50 };
+
+        function drawGravity() {
+            const canvas = gravityCanvas;
+            const ctx = gravCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0,0,w,h);
+            const originX = w/2;
+            const originY = h/2;
+
+            mass2.x = parseFloat(distanceSlider.value);
+            distanceValueDisplay.textContent = mass2.x.toFixed(0);
+
+            const G = 1; // Arbitrary gravitational constant for visualization
+            const r_sq = Math.pow(mass2.x - mass1.x, 2) + Math.pow(mass2.y - mass1.y, 2);
+            const r = Math.sqrt(r_sq);
+            const forceMagnitude = (G * mass1.m * mass2.m) / r_sq;
+            forceValueDisplay.textContent = (forceMagnitude*100).toFixed(2); // Scaled for display
+
+            // Draw masses
+            ctx.beginPath();
+            ctx.arc(originX + mass1.x, originY + mass1.y, mass1.radius, 0, 2*Math.PI);
+            ctx.fillStyle = '#1D4ED8'; // blue-700
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(originX + mass2.x, originY + mass2.y, mass2.radius, 0, 2*Math.PI);
+            ctx.fillStyle = '#2563EB'; // blue-600
+            ctx.fill();
+            
+            // Draw force vectors (simplified)
+            const forceDisplayLength = Math.min(forceMagnitude * 50, w/4); // Cap length
+
+            // Force on mass2 by mass1
+            ctx.beginPath();
+            ctx.moveTo(originX + mass2.x, originY + mass2.y);
+            ctx.lineTo(originX + mass2.x - forceDisplayLength * ((mass2.x-mass1.x)/r) , originY + mass2.y - forceDisplayLength * ((mass2.y-mass1.y)/r));
+            ctx.strokeStyle = '#EA580C';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Force on mass1 by mass2
+            ctx.beginPath();
+            ctx.moveTo(originX + mass1.x, originY + mass1.y);
+            ctx.lineTo(originX + mass1.x + forceDisplayLength * ((mass2.x-mass1.x)/r) , originY + mass1.y + forceDisplayLength * ((mass2.y-mass1.y)/r));
+            ctx.strokeStyle = '#EA580C';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        distanceSlider.addEventListener('input', drawGravity);
+        drawGravity();
+
+        // Synthesis Canvas
+        const synthesisCanvas = document.getElementById('synthesisCanvas');
+        const synthesisCtx = synthesisCanvas.getContext('2d');
+        const synthesisNextStepBtn = document.getElementById('synthesisNextStep');
+        const synthesisStepText = document.getElementById('synthesisStepText');
+        let currentSynthesisStep = 0;
+        const synthesisSteps = [
+            "Step 0: Initial State - Planet & Sun",
+            "Step 1: Sun exerts Gravitational Force (Inverse Square Law)",
+            "Step 2: Force causes Acceleration (Newton's 2nd Law: F=ma)",
+            "Step 3: Acceleration changes Velocity (Calculus: dv/dt = a)",
+            "Step 4: Velocity changes Position (Calculus: dx/dt = v)",
+            "Step 5: Resulting Path is an Ellipse (Solved Differential Equation)"
+        ];
+
+        function drawSynthesisStep(step) {
+            const canvas = synthesisCanvas;
+            const ctx = synthesisCtx;
+            const w = canvas.width = canvas.parentElement.clientWidth;
+            const h = canvas.height = canvas.parentElement.clientHeight;
+            ctx.clearRect(0,0,w,h);
+            const centerX = w/2;
+            const centerY = h/2;
+
+            // Sun
+            ctx.beginPath();
+            ctx.arc(centerX - 50, centerY, 15, 0, 2*Math.PI);
+            ctx.fillStyle = '#F97316'; // orange-500
+            ctx.fill();
+            ctx.fillText("Sun", centerX - 60, centerY + 30);
+
+            // Planet
+            let planetX = centerX + 80;
+            let planetY = centerY - 30;
+            ctx.beginPath();
+            ctx.arc(planetX, planetY, 10, 0, 2*Math.PI);
+            ctx.fillStyle = '#3B82F6'; // blue-500
+            ctx.fill();
+            ctx.fillText("Planet", planetX - 15, planetY + 25);
+            
+            synthesisStepText.textContent = synthesisSteps[step];
+
+            if (step >= 1) { // Draw Force Vector
+                ctx.beginPath();
+                ctx.moveTo(planetX, planetY);
+                ctx.lineTo(centerX - 50 + (planetX - (centerX-50))*0.2, centerY + (planetY - centerY)*0.2); // Towards Sun
+                ctx.strokeStyle = '#EF4444'; // red-500
+                ctx.lineWidth = 3;
+                // Arrow head
+                const angle = Math.atan2(centerY - planetY, (centerX - 50) - planetX);
+                ctx.lineTo(planetX - 20 * Math.cos(angle - Math.PI / 6), planetY - 20 * Math.sin(angle - Math.PI / 6));
+                ctx.moveTo(planetX, planetY);
+                ctx.lineTo(planetX - 20 * Math.cos(angle + Math.PI / 6), planetY - 20 * Math.sin(angle + Math.PI / 6));
+                ctx.stroke();
+                if (step >= 1) ctx.fillText("Force (Gravity)", planetX - 80, planetY - 30);
+            }
+            if (step >= 2) { // Show Acceleration
+                ctx.beginPath();
+                ctx.moveTo(planetX, planetY - 15); // Offset for clarity
+                ctx.lineTo(planetX - 30, planetY - 15); // Simplified direction
+                ctx.strokeStyle = '#F59E0B'; // amber-500
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                // Arrow head for acceleration
+                ctx.beginPath();
+                ctx.moveTo(planetX - 30, planetY - 15);
+                ctx.lineTo(planetX - 30 + 5 * Math.cos(Math.PI + Math.PI / 6), planetY - 15 + 5 * Math.sin(Math.PI + Math.PI / 6));
+                ctx.moveTo(planetX - 30, planetY - 15);
+                ctx.lineTo(planetX - 30 + 5 * Math.cos(Math.PI - Math.PI / 6), planetY - 15 + 5 * Math.sin(Math.PI - Math.PI / 6));
+                ctx.stroke();
+                if (step >= 2) ctx.fillText("Acceleration", planetX - 20, planetY - 35);
+            }
+            if (step >= 3) { // Show Velocity Vector (initial tangential)
+                ctx.beginPath();
+                ctx.moveTo(planetX, planetY);
+                ctx.lineTo(planetX, planetY - 40); // Simplified initial velocity
+                ctx.strokeStyle = '#10B981'; // emerald-500
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                 // Arrow head for velocity
+                ctx.beginPath();
+                ctx.moveTo(planetX, planetY - 40);
+                ctx.lineTo(planetX + 5 * Math.cos(-Math.PI/2 + Math.PI / 6), planetY - 40 + 5 * Math.sin(-Math.PI/2 + Math.PI / 6));
+                ctx.moveTo(planetX, planetY - 40);
+                ctx.lineTo(planetX + 5 * Math.cos(-Math.PI/2 - Math.PI / 6), planetY - 40 + 5 * Math.sin(-Math.PI/2 - Math.PI / 6));
+                ctx.stroke();
+                if (step >= 3) ctx.fillText("Velocity", planetX + 10, planetY - 30);
+            }
+             if (step >= 4) { // Show a small change in position (start of orbit)
+                ctx.beginPath();
+                ctx.arc(planetX -5, planetY - 10, 3, 0, 2*Math.PI); // Previous position
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.5)';
+                ctx.fill();
+                if (step >=4) ctx.fillText("ΔPosition", planetX + 5, planetY + 5);
+            }
+            if (step >= 5) { // Draw Elliptical Path
+                ctx.beginPath();
+                ctx.ellipse(centerX + 15, centerY, 100, 60, 0, 0, 2 * Math.PI); // Orbit around sun
+                ctx.strokeStyle = '#A855F7'; // purple-500
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                if (step >= 5) ctx.fillText("Elliptical Orbit", centerX + 50, centerY + 70);
+            }
+        }
+
+        synthesisNextStepBtn.addEventListener('click', () => {
+            currentSynthesisStep = (currentSynthesisStep + 1) % synthesisSteps.length;
+            drawSynthesisStep(currentSynthesisStep);
+        });
+        drawSynthesisStep(0); // Initial draw
+
+
+        // Ensure canvases are redrawn on resize for responsiveness
+        window.addEventListener('resize', () => {
+            drawEllipse(parseFloat(eccentricitySlider.value));
+            drawEqualAreasFrame(); // Will be static if not animating
+            drawTangentProblem();
+            drawDerivativePlot();
+            drawIntegralPlot();
+            drawGravity();
+            drawSynthesisStep(currentSynthesisStep);
+        });
+
+        // Trigger initial active tab content
+        document.querySelector('.nav-link.active').click();
+        // Initial draws for all canvases once DOM is ready
+        window.dispatchEvent(new Event('resize'));
+
+    </script>
+</body>
+</html>
